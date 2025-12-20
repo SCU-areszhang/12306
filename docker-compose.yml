@@ -1,0 +1,165 @@
+services:
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: 12306-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: 12306
+      TZ: Asia/Shanghai
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./resources/db:/docker-entrypoint-initdb.d
+      - ./init-nacos-db.sql:/docker-entrypoint-initdb.d/init-nacos-db.sql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    networks:
+      - 12306-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: 12306-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass 123456 --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - 12306-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "123456", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Nacos 注册中心和配置中心
+  nacos:
+    image: nacos/nacos-server:v2.2.3
+    container_name: 12306-nacos
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    environment:
+      - MODE=standalone
+      # 修正变量名
+      - SPRING_DATASOURCE_DATA_SOURCE_PLATFORM=mysql 
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/nacos_config?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_USER_NAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - NACOS_AUTH_ENABLE=false
+      # 建议使用标准的 Base64 编码密钥，否则可能启动报错
+      - JVM_XMS=512m
+      - JVM_XMX=512m
+      # 移除过大的 Xmn 设置，让系统自动分配
+    volumes:
+      - nacos_data:/home/nacos/data
+      - nacos_logs:/home/nacos/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - 12306-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # RocketMQ NameServer
+  rocketmq-nameserver:
+    image: apache/rocketmq:5.1.4
+    container_name: 12306-rocketmq-nameserver
+    ports:
+      - "9876:9876"
+    environment:
+      JAVA_OPT_EXT: "-server -Xms256m -Xmx256m -Xmn128m"
+    volumes:
+      - rocketmq_nameserver_logs:/home/rocketmq/logs
+      - rocketmq_nameserver_store:/home/rocketmq/store
+    user: root
+    command: sh mqnamesrv
+    networks:
+      - 12306-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep -v grep | grep mqnamesrv || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # RocketMQ Broker
+  rocketmq-broker:
+    image: apache/rocketmq:5.1.4
+    container_name: 12306-rocketmq-broker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    environment:
+      NAMESRV_ADDR: rocketmq-nameserver:9876
+      JAVA_OPT_EXT: "-server -Xms256m -Xmx256m -Xmn128m"
+    volumes:
+      - rocketmq_broker_logs:/home/rocketmq/logs
+      - rocketmq_broker_store:/home/rocketmq/store
+    user: root
+    command: sh mqbroker -n rocketmq-nameserver:9876 autoCreateTopicEnable=true
+    depends_on:
+      rocketmq-nameserver:
+        condition: service_started
+    networks:
+      - 12306-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep -v grep | grep mqbroker || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Sentinel Dashboard (可选，用于流量控制和监控)
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.6
+    container_name: 12306-sentinel
+    ports:
+      - "8686:8080"
+    environment:
+      JAVA_OPTS: "-Dserver.port=8080 -Dcsp.sentinel.dashboard.server=localhost:8080"
+    networks:
+      - 12306-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  nacos_data:
+    driver: local
+  nacos_logs:
+    driver: local
+  rocketmq_nameserver_logs:
+    driver: local
+  rocketmq_nameserver_store:
+    driver: local
+  rocketmq_broker_logs:
+    driver: local
+  rocketmq_broker_store:
+    driver: local
+
+networks:
+ 12306-network:
+   driver: bridge
+

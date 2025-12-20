@@ -1,0 +1,25 @@
+-- 12306 项目数据库初始化脚本
+-- 用于创建所有必要的数据库
+
+-- 创建购票服务数据库（已存在，但确保字符集正确）
+CREATE DATABASE IF NOT EXISTS `12306_ticket` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 创建用户服务数据库（分库分表）
+CREATE DATABASE IF NOT EXISTS `12306_user_0` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `12306_user_1` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 创建订单服务数据库（分库分表）
+CREATE DATABASE IF NOT EXISTS `12306_order_0` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `12306_order_1` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 创建支付服务数据库（分库分表）
+CREATE DATABASE IF NOT EXISTS `12306_pay_0` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `12306_pay_1` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 创建 Nacos 配置中心数据库
+CREATE DATABASE IF NOT EXISTS `nacos_config` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 显示所有创建的数据库
+SHOW DATABASES LIKE '12306%';
+SHOW DATABASES LIKE 'nacos%';
+

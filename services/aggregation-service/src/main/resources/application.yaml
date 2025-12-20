@@ -20,8 +20,7 @@ spring:
         server-addr: ${spring.cloud.nacos.discovery.server-addr}
         import-check:
           enabled: false
-      username: nacos
-      password: nacos
+
     sentinel:
       transport:
         dashboard: localhost:8686
