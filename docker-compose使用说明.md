@@ -148,9 +148,9 @@ CREATE DATABASE IF NOT EXISTS `12306_pay_1` DEFAULT CHARACTER SET utf8mb4 COLLAT
 
 然后执行对应的 SQL 脚本：
 ```bash
-docker exec -i 12306-mysql mysql -uroot -proot 12306_user_0 < resources/db/12306-springcloud-user.sql
-docker exec -i 12306-mysql mysql -uroot -proot 12306_order_0 < resources/db/12306-springcloud-order.sql
-docker exec -i 12306-mysql mysql -uroot -proot 12306_pay_0 < resources/db/12306-springcloud-pay.sql
+docker exec -i 12306-mysql mysql -uroot -proot `12306_user_0` < resources/db/12306-springcloud-user.sql
+docker exec -i 12306-mysql mysql -uroot -proot `12306_order_0` < resources/db/12306-springcloud-order.sql
+docker exec -i 12306-mysql mysql -uroot -proot `12306_pay_0` < resources/db/12306-springcloud-pay.sql
 ```
 
 ## 🔍 常见问题排查
