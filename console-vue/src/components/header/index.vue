@@ -9,15 +9,15 @@
           <router-link to="/ticketSearch">
             <li>首页</li>
           </router-link>
-          <a href="https://nageoffer.com/12306" target="_blank">
-            <li>文档</li>
-          </a>
-          <a href="https://nageoffer.com/docs/" target="_blank">
-            <li>博客</li>
-          </a>
-          <a href="https://nageoffer.com/planet" target="_blank">
-            <li>社区</li>
-          </a>
+<!--          <a href="https://nageoffer.com/12306" target="_blank">-->
+<!--            <li>文档</li>-->
+<!--          </a>-->
+<!--          <a href="https://nageoffer.com/docs/" target="_blank">-->
+<!--            <li>博客</li>-->
+<!--          </a>-->
+<!--          <a href="https://nageoffer.com/planet" target="_blank">-->
+<!--            <li>社区</li>-->
+<!--          </a>-->
           <a v-if="route.fullPath !== '/login'">
             <Dropdown :trigger="['click']">
               <li :style="{ padding: '0 0 0 30px' }">

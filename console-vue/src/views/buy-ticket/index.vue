@@ -349,16 +349,11 @@
           }"
         >
           <Button @click="state.open = false">返回修改</Button>
+          <Button @click="() => router.push('/ticketSearch')">上一步</Button>
           <Button
-            :loading="state.loading"
-            :style="{
-              backgroundColor: '#ff8001',
-              color: '#fff',
-              border: 'none'
-            }"
-            @click="handleSubmitBuyTicket"
-            >确认</Button
-          >
+              class="submit-btn"
+              @click="handleRedirect"
+          >确认</Button>
         </Space>
       </Space>
     </Modal>
@@ -396,6 +391,15 @@ import { SEAT_CLASS_TYPE_LIST } from '@/constants'
 import Cookie from 'js-cookie'
 import router from '@/router'
 const styleWidth = { width: '150px' }
+
+
+
+const handleRedirect = () => {
+  // 这里是跳转的目标网页
+  window.location.href = 'http://localhost:8081/'; // 修改为你想跳转的网页链接
+}
+
+
 
 const { query } = useRoute()
 const username = Cookie.get('username')
