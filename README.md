@@ -304,7 +304,7 @@ docker system prune
 
 Enter `type resources\data\12306-springboot.sql > tmp.sql` firstly, 
 
-Then, enter `type tmp.sql | docker exec -i 12306-mysql mysql -uroot -prrot 12306`, in your **cmd** firstly, at the root directory.
+Then, enter `type tmp.sql | docker exec -i 12306-mysql mysql -uroot -proot 12306`, in your **cmd** firstly, at the root directory.
 
 5. 开始开发和测试
 
