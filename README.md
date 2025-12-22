@@ -299,7 +299,14 @@ docker system prune
 1. 执行数据库初始化脚本（如果还未执行）
 2. 启动后端微服务
 3. 启动前端服务
-4. 开始开发和测试
+
+## MySQL Data Injection
+
+Enter `type resources\data\12306-springboot.sql > tmp.sql` firstly, 
+
+Then, enter `type tmp.sql | docker exec -i 12306-mysql mysql -uroot -prrot 12306`, in your **cmd** firstly, at the root directory.
+
+5. 开始开发和测试
 
 祝您使用愉快！🚀
 
