@@ -11,8 +11,7 @@ spring:
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848
-      password: nacos
-      username: nacos
+      # Nacos 认证已禁用 (NACOS_AUTH_ENABLE=false)，无需配置 username 和 password
     sentinel:
       transport:
         dashboard: localhost:8686

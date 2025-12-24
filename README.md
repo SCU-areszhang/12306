@@ -94,7 +94,7 @@ docker logs 12306-rocketmq-broker
 ```
 
 ### Sentinel Dashboard
-- **控制台地址**: http://localhost:8686
+- **控制台地址**:  http://localhost:8686
 - **默认用户名**: `sentinel`
 - **默认密码**: `sentinel`
 

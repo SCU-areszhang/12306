@@ -352,7 +352,8 @@
           <Button @click="() => router.push('/ticketSearch')">上一步</Button>
           <Button
               class="submit-btn"
-              @click="handleRedirect"
+              @click="handleSubmitBuyTicket"
+              :loading="state.loading"
           >确认</Button>
         </Space>
       </Space>
@@ -379,7 +380,8 @@ import { useRoute } from 'vue-router'
 import {
   fetchTicketSearch,
   fetchPassengerList,
-  fetchBuyTicket
+  fetchBuyTicket,
+  fetchStationAll
 } from '@/service'
 import { onMounted, reactive, toRaw, watch, ref } from 'vue'
 import { getWeekNumber } from '@/utils'
@@ -394,10 +396,7 @@ const styleWidth = { width: '150px' }
 
 
 
-const handleRedirect = () => {
-  // 这里是跳转的目标网页
-  window.location.href = 'http://localhost:8081/'; // 修改为你想跳转的网页链接
-}
+// handleRedirect 函数已移除，使用 handleSubmitBuyTicket 代替
 
 
 
@@ -415,32 +414,49 @@ const state = reactive({
   isChooseSeat: true,
   seatLeft: 3,
   seatNumber: 5,
-  loading: false
+  loading: false,
+  stationList: [] // 存储站点列表，用于根据代码查找站点名称
 })
 const currPassenger = ref([])
 
 onMounted(() => {
+  // 先获取站点列表
+  fetchStationAll().then((res) => {
+    const result = res.code === '0' ? res : (res.data || res)
+    if (result.code === '0' || result.success) {
+      state.stationList = result.data || []
+    }
+  })
+  
   fetchTicketSearch({
     fromStation: query.fromStation,
     toStation: query.toStation,
     departureDate: query.departureDate
   }).then((res) => {
-    if (res.success) {
-      const currTrain = res.data.trainList.find(
+    // 处理响应：axios 返回的是 response.data，需要检查 code 字段
+    const result = res.code === '0' ? res : (res.data || res)
+    if (result.code === '0' || result.success) {
+      const trainList = result.data?.trainList || result.trainList || []
+      const currTrain = trainList.find(
         (item) => item.trainNumber === query.trainNumber
       )
-      state.currentSeat = currTrain.seatClassList
-      state.currTrain = currTrain
+      if (currTrain) {
+        state.currentSeat = currTrain.seatClassList
+        state.currTrain = currTrain
+      }
     }
   })
   fetchPassengerList({ username }).then((res) => {
-    if (res.success) {
-      state.currPassengerList = res.data ?? []
-      state.dataSource = res.data?.map((item, index) => ({
+    // 处理响应：axios 返回的是 response.data，需要检查 code 字段
+    const result = res.code === '0' ? res : (res.data || res)
+    if (result.code === '0' || result.success) {
+      const passengerData = result.data || []
+      state.currPassengerList = passengerData
+      state.dataSource = passengerData.map((item, index) => ({
         ...item,
         keyNumber: index + 1
       }))
-      state.rawDataSource = res.data?.map((item, index) => ({
+      state.rawDataSource = passengerData.map((item, index) => ({
         ...item,
         keyNumber: index + 1
       }))
@@ -651,29 +667,65 @@ const handleSubmitBuyTicket = () => {
     passengerId: item.id,
     seatType: item.seatType
   }))
+  
+  // 修复中文乱码问题：如果 departure/arrival 是乱码，从 stationList 中根据代码查找正确的站点名称
+  let departureName = state.currTrain?.departure
+  let arrivalName = state.currTrain?.arrival
+  
+  // 检查是否是乱码（包含非中文字符或 Unicode 转义字符）
+  const isGarbled = (str) => {
+    if (!str) return false
+    // 检查是否包含乱码特征：非中文字符、Unicode 转义等
+    return /[^\u4e00-\u9fa5]/.test(str) && !/^[A-Z]{2,5}$/.test(str)
+  }
+  
+  // 如果 departure/arrival 是乱码，尝试从 stationList 中根据代码查找
+  if (isGarbled(departureName) && query.fromStation && state.stationList.length > 0) {
+    const station = state.stationList.find(s => s.code === query.fromStation)
+    if (station) {
+      departureName = station.name
+    }
+  }
+  
+  if (isGarbled(arrivalName) && query.toStation && state.stationList.length > 0) {
+    const station = state.stationList.find(s => s.code === query.toStation)
+    if (station) {
+      arrivalName = station.name
+    }
+  }
+  
   params = {
     ...params,
     passengers,
     chooseSeats: toRaw(state.currentSeatCode),
-    departure: state.currTrain?.departure,
-    arrival: state.currTrain?.arrival
+    departure: departureName,
+    arrival: arrivalName
   }
+  
   state.loading = true
   fetchBuyTicket(params)
     .then((res) => {
-      if (res.success) {
+      // 处理响应：axios 返回的是 response，而 fetchBuyTicket 返回的是 data
+      // 所以 res 可能是 Result 对象（有 code 字段）或者直接是 data
+      const result = res.code === '0' ? res : (res.data || res)
+      if (result.code === '0' || result.success) {
+        const orderSn = result.data?.orderSn || result.orderSn
         message.success('下单成功，正在跳转至订单')
         setTimeout(() => {
-          router.push(`/order?sn=${res.data.orderSn}`)
+          router.push(`/order?sn=${orderSn}`)
         }, 500)
       } else {
-        message.error(res.message)
+        message.error(result.message || '订单提交失败')
       }
       state.loading = false
     })
     .catch((error) => {
       state.loading = false
-      console.log(error)
+      // 处理错误响应：axios 错误时，error.response.data 包含后端返回的 Result 对象
+      const errorData = error.response?.data || error.data || error
+      const errorMsg = errorData.message || error.message || '订单提交失败，请重试'
+      message.error(errorMsg)
+      console.log('订单提交错误:', error)
     })
 }
 </script>

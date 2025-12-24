@@ -47,6 +47,7 @@ services:
   # Nacos 注册中心和配置中心
   nacos:
     image: nacos/nacos-server:v2.2.3
+    platform: linux/amd64
     container_name: 12306-nacos
     ports:
       - "8848:8848"
@@ -81,6 +82,7 @@ services:
   # RocketMQ NameServer
   rocketmq-nameserver:
     image: apache/rocketmq:5.1.4
+    platform: linux/amd64
     container_name: 12306-rocketmq-nameserver
     ports:
       - "9876:9876"
@@ -104,6 +106,7 @@ services:
   # RocketMQ Broker
   rocketmq-broker:
     image: apache/rocketmq:5.1.4
+    platform: linux/amd64
     container_name: 12306-rocketmq-broker
     ports:
       - "10909:10909"
@@ -132,6 +135,7 @@ services:
   # Sentinel Dashboard (可选，用于流量控制和监控)
   sentinel:
     image: bladex/sentinel-dashboard:1.8.6
+    platform: linux/amd64
     container_name: 12306-sentinel
     ports:
       - "8686:8080"

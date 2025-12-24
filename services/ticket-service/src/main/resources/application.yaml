@@ -1,6 +1,11 @@
 
 server:
   port: 9002
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 spring:
   application:
@@ -29,8 +34,7 @@ spring:
         server-addr: ${spring.cloud.nacos.discovery.server-addr}
         import-check:
           enabled: false
-      username: nacos
-      password: nacos
+      # Nacos 认证已禁用 (NACOS_AUTH_ENABLE=false)，无需配置 username 和 password
     sentinel:
       transport:
         dashboard: localhost:8686

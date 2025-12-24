@@ -22,6 +22,7 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.text.StrBuilder;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -180,11 +181,11 @@ public class OrderServiceImpl implements OrderService {
             // 创建订单并支付后延时关闭订单消息怎么办？详情查看：https://nageoffer.com/12306/question
             SendResult sendResult = delayCloseOrderSendProduce.sendMessage(delayCloseOrderEvent);
             if (!Objects.equals(sendResult.getSendStatus(), SendStatus.SEND_OK)) {
-                throw new ServiceException("投递延迟关闭订单消息队列失败");
+                log.warn("投递延迟关闭订单消息队列失败，sendStatus: {}", sendResult.getSendStatus());
             }
         } catch (Throwable ex) {
             log.error("延迟关闭订单消息队列发送错误，请求参数：{}", JSON.toJSONString(requestParam), ex);
-            throw ex;
+            // RocketMQ 在开发/调试环境不可用时，允许下单继续，手动处理超时订单
         }
         return orderSn;
     }
@@ -295,9 +296,9 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public PageResponse<TicketOrderDetailSelfRespDTO> pageSelfTicketOrder(TicketOrderSelfPageQueryReqDTO requestParam) {
         Result<UserQueryActualRespDTO> userActualResp = userRemoteService.queryActualUserByUsername(UserContext.getUsername());
-        LambdaQueryWrapper<OrderItemPassengerDO> queryWrapper = Wrappers.lambdaQuery(OrderItemPassengerDO.class)
-                .eq(OrderItemPassengerDO::getIdCard, userActualResp.getData().getIdCard())
-                .orderByDesc(OrderItemPassengerDO::getCreateTime);
+        QueryWrapper<OrderItemPassengerDO> queryWrapper = new QueryWrapper<OrderItemPassengerDO>()
+                .eq("id_card", userActualResp.getData().getIdCard())
+                .orderByDesc("create_time");
         IPage<OrderItemPassengerDO> orderItemPassengerPage = orderPassengerRelationService.page(PageUtil.convert(requestParam), queryWrapper);
         return PageUtil.convert(orderItemPassengerPage, each -> {
             LambdaQueryWrapper<OrderDO> orderQueryWrapper = Wrappers.lambdaQuery(OrderDO.class)
